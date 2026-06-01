@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantum-bridge"
+version = "0.1.0"
+description = "A provider-neutral bridge for allocating quantum runtime resources from other programs."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Quantum Bridge contributors" }
+]
+keywords = ["quantum", "runtime", "bridge", "openqasm", "cli"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/yokshire/__services__"
+Repository = "https://github.com/yokshire/__services__"
+Issues = "https://github.com/yokshire/__services__/issues"
+
+[project.scripts]
+quantum-bridge = "quantum_bridge.cli:main"
+qb = "quantum_bridge.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

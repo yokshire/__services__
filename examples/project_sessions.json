@@ -1,0 +1,32 @@
+{
+  "sessions": [
+    {
+      "session_id": "risk-monte-carlo",
+      "name": "Derivative risk Monte Carlo",
+      "operation": "Estimate expected loss from many sampled market paths.",
+      "tags": ["monte_carlo", "risk", "expectation", "finance"],
+      "workload_size": 2500000,
+      "current_runtime": "python/numpy",
+      "code_entrypoint": "risk/simulate.py:run_paths"
+    },
+    {
+      "session_id": "routing-optimizer",
+      "name": "Fleet route optimizer",
+      "operation": "Solve a QUBO-like combinatorial routing problem with binary decision variables.",
+      "tags": ["optimization", "qubo", "routing", "constraint_optimization"],
+      "workload_size": 18000,
+      "current_runtime": "ortools",
+      "code_entrypoint": "ops/routes.py:optimize"
+    },
+    {
+      "session_id": "molecule-energy",
+      "name": "Small molecule ground-state estimate",
+      "operation": "Evaluate Hamiltonian expectation values for molecular energy search.",
+      "tags": ["chemistry", "hamiltonian", "ground_state", "vqe"],
+      "workload_size": 64,
+      "current_runtime": "classical-simulator",
+      "code_entrypoint": "chem/energy.py:estimate"
+    }
+  ],
+  "preferred_platform": "ibm_quantum"
+}

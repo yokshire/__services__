@@ -200,5 +200,3 @@ The included GitHub Actions workflows run unit tests and build release artifacts
 ## License
 
 MIT
-
-Bootstrap trigger: this temporary line should be removed by the project snapshot workflow.
