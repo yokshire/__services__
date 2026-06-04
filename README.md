@@ -15,6 +15,15 @@ The project goal is to give application developers a small, provider-neutral int
 
 This repository starts with a dependency-free Python MVP. It includes a local OpenQASM simulator so anyone can install the tool and run a Bell-state circuit without needing cloud credentials.
 
+## Quick Start
+
+```bash
+python -m pip install -e .
+qb examples
+qb run examples/bell.qasm --shots 1000 --seed 7
+qb advise examples/project_sessions.json --platform ibm_quantum
+```
+
 ## Install For Development
 
 ```bash
@@ -65,6 +74,12 @@ print(result.counts)
 
 ## CLI
 
+List bundled examples:
+
+```bash
+qb examples
+```
+
 List providers:
 
 ```bash
@@ -85,6 +100,16 @@ qb result <job-id>
 ```
 
 By default, completed local jobs are stored under `~/.quantum_bridge/jobs`. Set `QUANTUM_BRIDGE_HOME` to change that location.
+
+## Bundled Examples
+
+The repository currently includes:
+
+- `examples/bell.qasm`: OpenQASM 2 Bell-state circuit for testing local runtime execution.
+- `examples/project_sessions.json`: three project computation sessions for advisor testing: Monte Carlo risk estimation, QUBO-style routing optimization, and small-molecule energy estimation.
+- `qb demo`: built-in advisor demo using the same session shapes without requiring an input file.
+
+See [examples/README.md](examples/README.md) for expected commands and behavior.
 
 ## Demo Migration Advisor
 
