@@ -13,6 +13,28 @@ from quantum_bridge.models import JobStatus, ResourceSpec, RunResult
 from quantum_bridge.store import JobStore
 
 
+EXAMPLE_REGISTRY: tuple[dict[str, str], ...] = (
+    {
+        "id": "bell-qasm",
+        "path": "examples/bell.qasm",
+        "command": "qb run examples/bell.qasm --shots 1000 --seed 7",
+        "description": "Bell-state OpenQASM 2 circuit for checking the local simulator.",
+    },
+    {
+        "id": "project-sessions",
+        "path": "examples/project_sessions.json",
+        "command": "qb advise examples/project_sessions.json --platform ibm_quantum",
+        "description": "Three sample computation sessions for the demo migration advisor.",
+    },
+    {
+        "id": "built-in-demo",
+        "path": "built-in",
+        "command": "qb demo",
+        "description": "Built-in advisor demo using the same session shapes without a file.",
+    },
+)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -34,6 +56,10 @@ def _build_parser() -> argparse.ArgumentParser:
     providers = subcommands.add_parser("providers", help="list registered providers")
     providers.add_argument("--json", action="store_true", help="print JSON")
     providers.set_defaults(func=_cmd_providers)
+
+    examples = subcommands.add_parser("examples", help="list bundled examples and demo commands")
+    examples.add_argument("--json", action="store_true", help="print JSON")
+    examples.set_defaults(func=_cmd_examples)
 
     algorithms = subcommands.add_parser("algorithms", help="list quantum algorithm migration guidance")
     algorithms.add_argument("--json", action="store_true", help="print JSON")
@@ -81,6 +107,22 @@ def _build_parser() -> argparse.ArgumentParser:
     result.set_defaults(func=_cmd_result)
 
     return parser
+
+
+def _cmd_examples(args: argparse.Namespace) -> int:
+    payload = {"examples": list(EXAMPLE_REGISTRY)}
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+
+    print("Quantum Bridge examples")
+    for example in EXAMPLE_REGISTRY:
+        print("")
+        print(f"{example['id']}")
+        print(f"  path: {example['path']}")
+        print(f"  purpose: {example['description']}")
+        print(f"  try: {example['command']}")
+    return 0
 
 
 def _cmd_providers(args: argparse.Namespace) -> int:
