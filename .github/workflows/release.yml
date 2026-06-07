@@ -16,10 +16,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Build package
+      - name: Build packages
         run: |
           python -m pip install --upgrade pip build
-          python -m build
+          if [ -d quantum_runtime_bridge ]; then
+            python -m build quantum_runtime_bridge --outdir dist
+          elif [ -f pyproject.toml ]; then
+            python -m build --outdir dist
+          fi
+          python -m build codex_game_server --outdir dist
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:

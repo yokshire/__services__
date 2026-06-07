@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "name": "survival",
+  "game": "minecraft",
+  "host": "127.0.0.1",
+  "port": 25565,
+  "start_command": ["java", "-Xmx2G", "-jar", "server.jar", "nogui"],
+  "working_directory": ".",
+  "directories": {
+    "world": "world",
+    "plugins": "plugins",
+    "backups": "backups",
+    "logs": "logs"
+  },
+  "codex": {
+    "bridge_host": "127.0.0.1",
+    "bridge_port": 8766,
+    "command_prefix": "/codex",
+    "function_prefix": "/codex_func",
+    "require_admin": true
+  },
+  "env": {},
+  "tags": ["example"],
+  "metadata": {
+    "description": "Sample manifest for a local game server."
+  }
+}
