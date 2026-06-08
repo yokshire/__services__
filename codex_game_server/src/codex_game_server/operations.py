@@ -33,8 +33,12 @@ def init_server(
     if manifest_file.exists() and not overwrite:
         raise ValueError(f"manifest already exists: {manifest_file}")
 
-    normalized_game = normalize_game(game)
-    profile = SUPPORTED_GAMES.get(normalized_game)
+    try:
+        profile = profile_for(game)
+        normalized_game = profile.game
+    except ValueError:
+        normalized_game = normalize_game(game)
+        profile = SUPPORTED_GAMES.get(normalized_game)
     directories = dict(profile.directories if profile else DEFAULT_DIRECTORIES)
     server_port = port if port is not None else (profile.default_port if profile else 25565)
     metadata = {}

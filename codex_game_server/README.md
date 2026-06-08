@@ -1,10 +1,11 @@
 # Codex Game Server
 
-Codex Game Server is a dependency-free Python CLI for game server operators who
-want to expose Codex to trusted in-game administrators. It keeps a server
-declaration in one JSON manifest, checks local Codex login status, registers
-authorized game accounts, generates game-specific integration scaffolds, and
-runs a local HTTP bridge for `/codex *` and `/codex_func *` calls.
+Codex Game Server is a dependency-free Python CLI for game server operators,
+game platform creators, and game-tool developers who want to expose Codex to
+trusted in-game or editor-side administrators. It keeps a target declaration in
+one JSON manifest, checks local Codex login status, registers authorized game
+or tool accounts, generates target-specific integration scaffolds, and runs a
+local HTTP bridge for `/codex *` and `/codex_func *` calls.
 
 It also keeps the earlier server-ops helpers: plugin inventory, world backups,
 TCP health checks, and foreground launches.
@@ -68,8 +69,9 @@ All relative paths are resolved from the manifest directory.
 
 ## Codex Bridge
 
-The Python bridge is the only component that talks to Codex. Game plugins and
-mods forward in-game commands to the bridge:
+The Python bridge is the only component that talks to Codex. Game plugins,
+mods, platform scripts, and editor extensions forward trusted commands to the
+bridge:
 
 - `/codex *`: send a prompt to Codex through `codex exec`
 - `/codex_func *`: run internal server functions such as `status`, `admins`,
@@ -103,24 +105,28 @@ cgs admin remove ./servers/survival --account Steve
 
 The registry is stored next to `server.json` as `codex_admins.json`.
 
-## Supported Games
+## Supported Targets
 
 Current test targets:
 
-| Game | Integration shape | Default command prefixes |
-| --- | --- | --- |
-| Minecraft | Paper/Spigot plugin scaffold | `/codex`, `/codex_func` |
-| Project Zomboid | Server mod scaffold | `/codex`, `/codex_func` |
-| Palworld | Sidecar/RCON relay scaffold | `/codex`, `/codex_func` |
-| Terraria | TShock/TerrariaAPI plugin scaffold | `/codex`, `/codex_func` |
+| Target | Category | Integration shape | Default command prefixes |
+| --- | --- | --- | --- |
+| Minecraft | Game server | Paper/Spigot plugin scaffold | `/codex`, `/codex_func` |
+| Project Zomboid | Game server | Server mod scaffold | `/codex`, `/codex_func` |
+| Palworld | Game server | Sidecar/RCON relay scaffold | `/codex`, `/codex_func` |
+| Terraria | Game server | TShock/TerrariaAPI plugin scaffold | `/codex`, `/codex_func` |
+| Roblox Studio | Development tool | Studio plugin scaffold | `/codex`, `/codex_func` |
+| MapleStory Worlds | Development tool | World script scaffold | `/codex`, `/codex_func` |
+| Unity Editor | Game engine | EditorWindow scaffold | `/codex`, `/codex_func` |
+| Unreal Engine | Game engine | Editor plugin scaffold | `/codex`, `/codex_func` |
 
-The supported game list is expected to keep changing as test coverage and
-server integration details are updated.
+The supported target list is expected to keep changing as test coverage,
+platform APIs, and integration details are updated.
 
 Generate the current integration files:
 
 ```bash
-cgs games
+cgs targets
 cgs integrate ./servers/survival
 ```
 
@@ -129,6 +135,7 @@ cgs integrate ./servers/survival
 ```bash
 cgs init <path> [--name NAME] [--game GAME] [--port PORT] [--start-command COMMAND]
 cgs games [--json]
+cgs targets [--json]
 cgs codex status [--doctor] [--json]
 cgs admin add <path> --account ACCOUNT [--display-name NAME]
 cgs admin list <path> [--json]

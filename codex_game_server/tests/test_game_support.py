@@ -10,11 +10,26 @@ from codex_game_server.operations import init_server, scaffold_integration, supp
 
 
 class GameSupportTests(unittest.TestCase):
-    def test_supported_games_include_requested_test_targets(self) -> None:
+    def test_supported_targets_include_games_and_development_tools(self) -> None:
         payload = supported_games()
         games = {game["game"] for game in payload["games"]}
 
-        self.assertEqual({"minecraft", "project_zomboid", "palworld", "terraria"}, games)
+        self.assertEqual(
+            {
+                "minecraft",
+                "project_zomboid",
+                "palworld",
+                "terraria",
+                "roblox",
+                "mapleworld",
+                "unity",
+                "unreal",
+            },
+            games,
+        )
+        categories = {game["category"] for game in payload["games"]}
+        self.assertIn("development_tool", categories)
+        self.assertIn("game_engine", categories)
         for game in payload["games"]:
             self.assertEqual(game["commands"]["codex"], "/codex *")
             self.assertEqual(game["commands"]["codex_func"], "/codex_func *")
@@ -31,7 +46,17 @@ class GameSupportTests(unittest.TestCase):
             self.assertEqual(manifest.directories["plugins"], "mods")
             self.assertEqual(manifest.codex_settings["command_prefix"], "/codex")
 
-    def test_scaffold_generates_command_bridge_files_for_each_supported_game(self) -> None:
+    def test_init_accepts_development_tool_aliases(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "ue"
+            init_server(root, game="unreal-engine")
+
+            manifest = load_manifest(root)
+
+            self.assertEqual(manifest.game, "unreal")
+            self.assertEqual(manifest.directories["plugins"], "Plugins/CodexGameServer")
+
+    def test_scaffold_generates_command_bridge_files_for_each_supported_target(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             for game in SUPPORTED_GAMES:
