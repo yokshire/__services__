@@ -86,7 +86,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     targets = subcommands.add_parser("targets", help="list compatible game and development-tool targets")
     targets.add_argument("--json", action="store_true", help="print JSON")
-    targets.add_defaults(func=_cmd_targets)
+    targets.set_defaults(func=_cmd_targets)
 
     integrate = subcommands.add_parser("integrate", help="generate game/plugin/tool bridge scaffold")
     integrate.add_argument("path", help="server root directory or manifest path")
