@@ -36,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="codex-game-server",
-        description="Declare, inspect, back up, and launch local game servers.",
+        description="Bridge Codex into game servers, game platforms, and game development tools.",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
 
@@ -80,11 +80,15 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--json", action="store_true", help="print JSON for dry-run output")
     run.set_defaults(func=_cmd_run)
 
-    games = subcommands.add_parser("games", help="list game integration profiles")
+    games = subcommands.add_parser("games", help="list compatible game and tool targets")
     games.add_argument("--json", action="store_true", help="print JSON")
-    games.set_defaults(func=_cmd_games)
+    games.set_defaults(func=_cmd_targets)
 
-    integrate = subcommands.add_parser("integrate", help="generate game plugin or sidecar scaffold")
+    targets = subcommands.add_parser("targets", help="list compatible game and development-tool targets")
+    targets.add_argument("--json", action="store_true", help="print JSON")
+    targets.add_defaults(func=_cmd_targets)
+
+    integrate = subcommands.add_parser("integrate", help="generate game/plugin/tool bridge scaffold")
     integrate.add_argument("path", help="server root directory or manifest path")
     integrate.add_argument("--game", default=None, help="override manifest game profile")
     integrate.add_argument("--output", default=None, help="output directory; defaults to <server>/codex_integration")
@@ -246,7 +250,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return int(result["return_code"])
 
 
-def _cmd_games(args: argparse.Namespace) -> int:
+def _cmd_targets(args: argparse.Namespace) -> int:
     payload = supported_games()
     if args.json:
         _print_json(payload)
@@ -254,6 +258,7 @@ def _cmd_games(args: argparse.Namespace) -> int:
 
     for game in payload["games"]:
         print(f"{game['game']}: {game['display_name']}")
+        print(f"  category: {game['category']}")
         print(f"  integration: {game['integration_kind']}")
         print(f"  commands: {game['commands']['codex']}, {game['commands']['codex_func']}")
     return 0

@@ -14,6 +14,8 @@ class GameSupportProfile:
     default_port: int
     directories: dict[str, str]
     notes: tuple[str, ...]
+    category: str = "game_server"
+    aliases: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -21,6 +23,8 @@ class GameSupportProfile:
             "display_name": self.display_name,
             "integration_kind": self.integration_kind,
             "maturity": self.maturity,
+            "category": self.category,
+            "aliases": list(self.aliases),
             "default_port": self.default_port,
             "directories": dict(self.directories),
             "commands": {
@@ -100,6 +104,82 @@ SUPPORTED_GAMES: dict[str, GameSupportProfile] = {
             "The generated plugin forwards authorized player requests to the local Python bridge.",
         ),
     ),
+    "roblox": GameSupportProfile(
+        game="roblox",
+        display_name="Roblox Studio",
+        integration_kind="studio_plugin_scaffold",
+        maturity="tool_scaffold",
+        default_port=8766,
+        directories={
+            "world": "workspace",
+            "plugins": "RobloxPlugins",
+            "backups": "backups",
+            "logs": "logs",
+        },
+        notes=(
+            "Generates a Roblox Studio plugin scaffold that posts Codex prompts to the local Python bridge.",
+            "Studio HTTP access must be enabled for the plugin test environment.",
+        ),
+        category="development_tool",
+        aliases=("roblox_studio",),
+    ),
+    "mapleworld": GameSupportProfile(
+        game="mapleworld",
+        display_name="MapleStory Worlds",
+        integration_kind="world_script_scaffold",
+        maturity="tool_scaffold",
+        default_port=8766,
+        directories={
+            "world": "workspace",
+            "plugins": "MapleWorldScripts",
+            "backups": "backups",
+            "logs": "logs",
+        },
+        notes=(
+            "Generates a MapleWorld script bridge scaffold for forwarding trusted creator/admin requests.",
+            "The generated files document the local bridge contract so the exact editor hook can be adjusted during platform testing.",
+        ),
+        category="development_tool",
+        aliases=("maple_world", "maplestory_worlds", "maple_story_worlds"),
+    ),
+    "unity": GameSupportProfile(
+        game="unity",
+        display_name="Unity Editor",
+        integration_kind="unity_editor_extension_scaffold",
+        maturity="tool_scaffold",
+        default_port=8766,
+        directories={
+            "world": "Assets",
+            "plugins": "Assets/Editor/CodexGameServer",
+            "backups": "backups",
+            "logs": "Logs",
+        },
+        notes=(
+            "Generates a Unity EditorWindow scaffold for calling the local Codex bridge from editor tooling.",
+            "The scaffold is editor-only and does not ship into runtime builds by default.",
+        ),
+        category="game_engine",
+        aliases=("unity_editor",),
+    ),
+    "unreal": GameSupportProfile(
+        game="unreal",
+        display_name="Unreal Engine",
+        integration_kind="unreal_editor_plugin_scaffold",
+        maturity="tool_scaffold",
+        default_port=8766,
+        directories={
+            "world": "Content",
+            "plugins": "Plugins/CodexGameServer",
+            "backups": "backups",
+            "logs": "Saved/Logs",
+        },
+        notes=(
+            "Generates an Unreal Editor plugin scaffold and local bridge contract files.",
+            "The scaffold targets editor-side Codex assistance rather than packaged game runtime execution.",
+        ),
+        category="game_engine",
+        aliases=("unreal_engine", "ue"),
+    ),
 }
 
 
@@ -109,10 +189,13 @@ def normalize_game(game: str) -> str:
 
 def profile_for(game: str) -> GameSupportProfile:
     normalized = normalize_game(game)
-    try:
+    if normalized in SUPPORTED_GAMES:
         return SUPPORTED_GAMES[normalized]
-    except KeyError as exc:
-        raise ValueError(f"unsupported game: {game}") from exc
+    for profile in SUPPORTED_GAMES.values():
+        aliases = {normalize_game(alias) for alias in profile.aliases}
+        if normalized in aliases:
+            return profile
+    raise ValueError(f"unsupported game or tool target: {game}")
 
 
 def profiles_payload() -> dict[str, Any]:
@@ -128,7 +211,15 @@ def scaffold_files(profile: GameSupportProfile, *, bridge_url: str) -> dict[str,
         return _palworld_files(bridge_url)
     if profile.game == "terraria":
         return _terraria_files(bridge_url)
-    raise ValueError(f"unsupported game: {profile.game}")
+    if profile.game == "roblox":
+        return _roblox_files(bridge_url)
+    if profile.game == "mapleworld":
+        return _mapleworld_files(bridge_url)
+    if profile.game == "unity":
+        return _unity_files(bridge_url)
+    if profile.game == "unreal":
+        return _unreal_files(bridge_url)
+    raise ValueError(f"unsupported game or tool target: {profile.game}")
 
 
 def write_scaffold(
@@ -379,6 +470,234 @@ public class CodexGameServerPlugin : TerrariaPlugin
         string responseText = await response.Content.ReadAsStringAsync();
         args.Player.SendInfoMessage(responseText);
     }}
+}}
+""",
+    }
+
+
+def _roblox_files(bridge_url: str) -> dict[str, str]:
+    return {
+        "roblox-studio-plugin/README.md": _readme(
+            "Roblox Studio plugin",
+            bridge_url,
+            "Install the Lua plugin in Roblox Studio and enable HTTP requests for the test place.",
+        )
+        + "\nThis scaffold exposes Studio toolbar actions for Codex prompts and internal functions.\n",
+        "roblox-studio-plugin/CodexGameServerPlugin.lua": f"""local HttpService = game:GetService("HttpService")
+
+local BRIDGE_URL = "{bridge_url}"
+local toolbar = plugin:CreateToolbar("Codex")
+local codexButton = toolbar:CreateButton("Codex Prompt", "Send a prompt to Codex Game Server", "")
+local funcButton = toolbar:CreateButton("Codex Func", "Run a Codex Game Server internal function", "")
+
+local function post(endpoint, payload)
+    local encoded = HttpService:JSONEncode(payload)
+    return HttpService:PostAsync(BRIDGE_URL .. endpoint, encoded, Enum.HttpContentType.ApplicationJson)
+end
+
+codexButton.Click:Connect(function()
+    -- Replace the placeholder account with a registered creator/admin identity.
+    local response = post("/v1/codex", {{
+        account = "studio-admin",
+        prompt = "Review the selected Roblox Studio work and suggest next steps."
+    }})
+    print("[CodexGameServer] " .. tostring(response))
+end)
+
+funcButton.Click:Connect(function()
+    local response = post("/v1/codex_func", {{
+        account = "studio-admin",
+        command = "status"
+    }})
+    print("[CodexGameServer] " .. tostring(response))
+end)
+""",
+        "roblox-studio-plugin/codex_bridge.json": f"""{{
+  "bridge_url": "{bridge_url}",
+  "command_prefix": "/codex",
+  "function_prefix": "/codex_func",
+  "target": "roblox"
+}}
+""",
+    }
+
+
+def _mapleworld_files(bridge_url: str) -> dict[str, str]:
+    return {
+        "mapleworld-script/README.md": _readme(
+            "MapleStory Worlds script bridge",
+            bridge_url,
+            "Use the script scaffold inside the world/editor test harness and wire the request functions to trusted creator/admin UI actions.",
+        )
+        + "\nThe exact editor hook can be adjusted during MapleWorld testing while preserving the bridge payload contract.\n",
+        "mapleworld-script/CodexBridge.lua": f"""local CodexBridge = {{}}
+
+CodexBridge.bridgeUrl = "{bridge_url}"
+CodexBridge.commandPrefix = "/codex"
+CodexBridge.functionPrefix = "/codex_func"
+
+function CodexBridge.codex(account, prompt)
+    -- Wire this function to a trusted creator/admin command UI in MapleWorld tests.
+    return {{
+        endpoint = "/v1/codex",
+        account = account,
+        prompt = prompt
+    }}
+end
+
+function CodexBridge.codex_func(account, command)
+    return {{
+        endpoint = "/v1/codex_func",
+        account = account,
+        command = command
+    }}
+end
+
+return CodexBridge
+""",
+        "mapleworld-script/codex_bridge.json": f"""{{
+  "bridge_url": "{bridge_url}",
+  "command_prefix": "/codex",
+  "function_prefix": "/codex_func",
+  "target": "mapleworld"
+}}
+""",
+    }
+
+
+def _unity_files(bridge_url: str) -> dict[str, str]:
+    return {
+        "unity-editor/README.md": _readme(
+            "Unity Editor extension",
+            bridge_url,
+            "Copy `Assets/Editor/CodexGameServer` into a Unity project and open Tools/Codex Game Server.",
+        ),
+        "unity-editor/Assets/Editor/CodexGameServer/CodexBridgeWindow.cs": f"""using System;
+using System.Net.Http;
+using System.Text;
+using UnityEditor;
+using UnityEngine;
+
+public class CodexBridgeWindow : EditorWindow
+{{
+    private const string BridgeUrl = "{bridge_url}";
+    private string account = "unity-admin";
+    private string prompt = "Review this Unity project context and suggest next steps.";
+    private string functionCommand = "status";
+    private string lastResponse = "";
+
+    [MenuItem("Tools/Codex Game Server")]
+    public static void Open()
+    {{
+        GetWindow<CodexBridgeWindow>("Codex Game Server");
+    }}
+
+    private void OnGUI()
+    {{
+        account = EditorGUILayout.TextField("Account", account);
+        prompt = EditorGUILayout.TextField("Codex Prompt", prompt);
+        functionCommand = EditorGUILayout.TextField("Function", functionCommand);
+
+        if (GUILayout.Button("Send /codex"))
+        {{
+            Post("/v1/codex", "{{\\\"account\\\":\\\"" + account + "\\\",\\\"prompt\\\":\\\"" + Escape(prompt) + "\\\"}}");
+        }}
+        if (GUILayout.Button("Send /codex_func"))
+        {{
+            Post("/v1/codex_func", "{{\\\"account\\\":\\\"" + account + "\\\",\\\"command\\\":\\\"" + Escape(functionCommand) + "\\\"}}");
+        }}
+
+        EditorGUILayout.HelpBox(lastResponse, MessageType.Info);
+    }}
+
+    private async void Post(string endpoint, string json)
+    {{
+        using (var client = new HttpClient())
+        {{
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync(BridgeUrl + endpoint, content);
+            lastResponse = await response.Content.ReadAsStringAsync();
+            Repaint();
+        }}
+    }}
+
+    private static string Escape(string value)
+    {{
+        return value.Replace("\\\\", "\\\\\\\\").Replace("\\\"", "\\\\\\\"");
+    }}
+}}
+""",
+        "unity-editor/codex_bridge.json": f"""{{
+  "bridge_url": "{bridge_url}",
+  "command_prefix": "/codex",
+  "function_prefix": "/codex_func",
+  "target": "unity"
+}}
+""",
+    }
+
+
+def _unreal_files(bridge_url: str) -> dict[str, str]:
+    return {
+        "unreal-plugin/README.md": _readme(
+            "Unreal Engine editor plugin",
+            bridge_url,
+            "Copy `Plugins/CodexGameServer` into an Unreal project and build the editor module.",
+        ),
+        "unreal-plugin/Plugins/CodexGameServer/CodexGameServer.uplugin": """{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "Codex Game Server",
+  "Description": "Editor-side bridge scaffold for Codex Game Server.",
+  "Category": "Editor",
+  "Modules": [
+    {
+      "Name": "CodexGameServer",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
+""",
+        "unreal-plugin/Plugins/CodexGameServer/Source/CodexGameServer/CodexGameServer.Build.cs": """using UnrealBuildTool;
+
+public class CodexGameServer : ModuleRules
+{
+    public CodexGameServer(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PrivateDependencyModuleNames.AddRange(new string[] {
+            "Core",
+            "CoreUObject",
+            "Engine",
+            "HTTP",
+            "Json",
+            "UnrealEd"
+        });
+    }
+}
+""",
+        "unreal-plugin/Plugins/CodexGameServer/Source/CodexGameServer/Private/CodexGameServerModule.cpp": f"""#include "Modules/ModuleManager.h"
+
+class FCodexGameServerModule final : public IModuleInterface
+{{
+public:
+    virtual void StartupModule() override
+    {{
+        // Register editor commands or toolbar actions here.
+        // Forward trusted editor/admin prompts to:
+        //   POST {bridge_url}/v1/codex
+        //   POST {bridge_url}/v1/codex_func
+    }}
+}};
+
+IMPLEMENT_MODULE(FCodexGameServerModule, CodexGameServer)
+""",
+        "unreal-plugin/codex_bridge.json": f"""{{
+  "bridge_url": "{bridge_url}",
+  "command_prefix": "/codex",
+  "function_prefix": "/codex_func",
+  "target": "unreal"
 }}
 """,
     }
